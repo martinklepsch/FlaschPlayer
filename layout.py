@@ -1,4 +1,29 @@
 def matrix_init():
+    """Hardcoded Layout for a single crate
+          (seen from front, up↥)
+           ┏━━━━━━━━━━━━━━━━━┓
+           ┃ ○ → ○   ○ → ○   ┃
+           ┃ ↑   ↓   ↑   ↓   ┃
+           ┃ ○   ○   ○   ○   ┃
+           ┃ ↑   ↓   ↑   ↓   ┃
+           ┃ ○   ○   ○   ○   ┃
+           ┃ ↑   ↓   ↑   ↓   ┃
+           ┃ ○   ○   ○   ○   ┃
+           ┃ ↑   ↓   ↑   ↓   ┃
+      {in}→┃ ○   ○ → ○   ○ → ┃→{out}
+           ┗━━━━━━━━━━━━━━━━━┛
+                  (down↧)
+
+        We create the matrix and an inverse.
+        For every second line of crates we need to use the inverse.
+            ┏┓┏┓┏┓┏┓
+        ^ ->┗┛┗┛┗┛┗┛
+        | <-┏┓┏┓┏┓┏┓<-
+            ┗┛┗┛┗┛┗┛ ↑
+            ┏┓┏┓┏┓┏┓ ↑
+          → ┗┛┗┛┗┛┗┛→↑
+"""
+
     led_id = 0
     matrix = dict()
     for i in range(5):
