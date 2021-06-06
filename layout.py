@@ -15,7 +15,20 @@ def matrix_init():
                   (down↧)
 
         We create the matrix and an inverse.
-        For every second line of crates we need to use the inverse.
+        For every second line of crates we can use the inverse 
+        if we dont want to lay long cables .
+
+        inverse=False
+            ┏┓┏┓┏┓┏┓ ↑
+          → ┗┛┗┛┗┛┗┛→↑
+          <-----------
+            ┏┓┏┓┏┓┏┓ ↑
+          → ┗┛┗┛┗┛┗┛→↑
+          <-----------
+            ┏┓┏┓┏┓┏┓ ↑
+          → ┗┛┗┛┗┛┗┛→↑
+
+        inverse=True
             ┏┓┏┓┏┓┏┓
         ^ ->┗┛┗┛┗┛┗┛
         | <-┏┓┏┓┏┓┏┓<-
@@ -56,27 +69,35 @@ def matrix_init():
 
     return (matrix, invers)
 
-def full_layout(x_boxes, y_boxes):
+def full_layout(x_boxes, y_boxes, inverse=False):
     """ x_boxes: Number of Beer Crates horizontal
         y_boxes: Number of Beer Crates vertical"""
     matrix = matrix_init()
     layout = dict()
     box_count = 0
-    for y in range(y_boxes):
-        if y & 1:
-            #'odd --> use invers
-            for x in range(x_boxes-1, -1, -1):
-                for k,v in matrix[1].items():
-                    coordinate = (k[0] + (4*x), k[1] + (5*y))
-                    layout[coordinate] = v + (20*box_count)
-                box_count += 1
-        else:
-            #'even --> use matrix
+    if not inverse:
+        for y in range(y_boxes):
             for x in range(x_boxes):
                 for k,v in matrix[0].items():
                     coordinate = (k[0] + (4*x), k[1] + (5*y))
                     layout[coordinate] = v + (20*box_count)
                 box_count += 1
+    else:
+        for y in range(y_boxes):
+            if y & 1:
+                #'odd --> use invers
+                for x in range(x_boxes-1, -1, -1):
+                    for k,v in matrix[1].items():
+                        coordinate = (k[0] + (4*x), k[1] + (5*y))
+                        layout[coordinate] = v + (20*box_count)
+                    box_count += 1
+            else:
+                #'even --> use matrix
+                for x in range(x_boxes):
+                    for k,v in matrix[0].items():
+                        coordinate = (k[0] + (4*x), k[1] + (5*y))
+                        layout[coordinate] = v + (20*box_count)
+                    box_count += 1
     return layout
 
 
@@ -91,6 +112,11 @@ if __name__ == '__main__':
         print(f'{k}:{v}')
     print('++++++++')
     print('full')
+    layout = full_layout(5,4,inverse=True)
+    for y in range(19,-1,-1):
+        for x in range(20):
+            print(f'{layout[(x,y)]} ', end='')
+        print(' ')
     layout = full_layout(5,4)
     for y in range(19,-1,-1):
         for x in range(20):
