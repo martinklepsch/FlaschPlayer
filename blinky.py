@@ -86,3 +86,7 @@ if __name__ == '__main__':
                     strip[matrix[(x,y)]] = rgb_frame.getpixel((x,y))
             post_media()
             strip.show()
+            try:
+                time.sleep(frame.info['duration']/1000)
+            except:
+                time.sleep(100)
