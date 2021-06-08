@@ -85,19 +85,20 @@ if __name__ == '__main__':
                 for y in range(DISPLAY_RESOLUTION[1]):
                     for x in range(DISPLAY_RESOLUTION[0]):
                         strip[matrix[(x,y)]] = rgb_frame.getpixel((x,y))
-                        #strip[matrix[(x,y)]] = (255,255,255)
                 post_media()
                 strip.show()
                 #TODO Do gifs always have a duration?
                 if 'duration' in frame.info:
                     if type(frame.info['duration']) is int:
                         time.sleep(frame.info['duration']/1000)
+                    else:
+                        time.sleep(0.1)
                 else:
                     time.sleep(0.1)
 
     except KeyboardInterrupt:
         for y in range(DISPLAY_RESOLUTION[1]):
             for x in range(DISPLAY_RESOLUTION[0]):
-                #It's not a bug it's afeature
+                #It's not a bug it's a feature
                 strip[matrix[(x,y)]] = (0,0,0)
                 strip.show()
