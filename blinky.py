@@ -71,22 +71,33 @@ if __name__ == '__main__':
     waiting_line = []
     active = False
     start = time.time()
-    while True:
-        #Load background gif. Should be exactly the Screen resolution
-        im = Image.open('blinky.gif')
-        if (im.size[0] < DISPLAY_RESOLUTION[0] or 
-                im.size[1] < DISPLAY_RESOLUTION[1]):
-            #fallback gif should be placed if the background is wrongly composed
-            im = Image.open('fallback.gif')
+    try:
+        while True:
+            #Load background gif. Should be exactly the Screen resolution
+            im = Image.open('blinky_test.gif')
+            if (im.size[0] < DISPLAY_RESOLUTION[0] or
+                    im.size[1] < DISPLAY_RESOLUTION[1]):
+                #fallback gif should be placed if the background is wrongly composed
+                im = Image.open('fallback.gif')
 
-        for frame in ImageSequence.Iterator(im):
-            rgb_frame = frame.convert('RGB')
-            for y in range(DISPLAY_RESOLUTION[1]):
-                for x in range(DISPLAY_RESOLUTION[0]):
-                    strip[matrix[(x,y)]] = rgb_frame.getpixel((x,y))
-            post_media()
-            strip.show()
-            try:
-                time.sleep(frame.info['duration']/1000)
-            except:
-                time.sleep(100)
+            for frame in ImageSequence.Iterator(im):
+                rgb_frame = frame.convert('RGB')
+                for y in range(DISPLAY_RESOLUTION[1]):
+                    for x in range(DISPLAY_RESOLUTION[0]):
+                        strip[matrix[(x,y)]] = rgb_frame.getpixel((x,y))
+                        #strip[matrix[(x,y)]] = (255,255,255)
+                post_media()
+                strip.show()
+                #TODO Do gifs always have a duration?
+                if 'duration' in frame.info:
+                    if type(frame.info['duration']) is int:
+                        time.sleep(frame.info['duration']/1000)
+                else:
+                    time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        for y in range(DISPLAY_RESOLUTION[1]):
+            for x in range(DISPLAY_RESOLUTION[0]):
+                #It's not a bug it's afeature
+                strip[matrix[(x,y)]] = (0,0,0)
+                strip.show()
