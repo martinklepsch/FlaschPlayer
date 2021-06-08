@@ -56,8 +56,15 @@ def post_media():
 
 
 if __name__ == '__main__':
-    X_BOXES = 5
-    Y_BOXES = 3
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--debug", action="store_true",
+                    help="debug mode")
+    parser.add_argument("-dl", "--delay", type=float,
+                    help="delay between set")
+
+    X_BOXES = 1
+    Y_BOXES = 1
     LED_COUNT = X_BOXES * Y_BOXES * 20
     DISPLAY_RESOLUTION = (X_BOXES * 4, Y_BOXES * 5)
 
@@ -71,34 +78,62 @@ if __name__ == '__main__':
     waiting_line = []
     active = False
     start = time.time()
-    try:
-        while True:
-            #Load background gif. Should be exactly the Screen resolution
-            im = Image.open('blinky_test.gif')
-            if (im.size[0] < DISPLAY_RESOLUTION[0] or
-                    im.size[1] < DISPLAY_RESOLUTION[1]):
-                #fallback gif should be placed if the background is wrongly composed
-                im = Image.open('fallback.gif')
 
-            for frame in ImageSequence.Iterator(im):
-                rgb_frame = frame.convert('RGB')
-                for y in range(DISPLAY_RESOLUTION[1]):
-                    for x in range(DISPLAY_RESOLUTION[0]):
-                        strip[matrix[(x,y)]] = rgb_frame.getpixel((x,y))
-                post_media()
-                strip.show()
-                #TODO Do gifs always have a duration?
-                if 'duration' in frame.info:
-                    if type(frame.info['duration']) is int:
-                        time.sleep(frame.info['duration']/1000)
+    args = parser.parse_args()
+    if not args.debug:
+        try:
+            while True:
+                #Load background gif. Should be exactly the Screen resolution
+                im = Image.open('blinky_test.gif')
+                if (im.size[0] < DISPLAY_RESOLUTION[0] or
+                        im.size[1] < DISPLAY_RESOLUTION[1]):
+                    #fallback gif should be placed if the background is wrongly composed
+                    im = Image.open('fallback.gif')
+
+                for frame in ImageSequence.Iterator(im):
+                    rgb_frame = frame.convert('RGB')
+                    for y in range(DISPLAY_RESOLUTION[1]):
+                        for x in range(DISPLAY_RESOLUTION[0]):
+                            strip[matrix[(x,y)]] = rgb_frame.getpixel((x,y))
+                    post_media()
+                    strip.show()
+                    #TODO Do gifs always have a duration?
+                    if 'duration' in frame.info:
+                        if type(frame.info['duration']) is int:
+                            time.sleep(frame.info['duration']/1000)
+                        else:
+                            time.sleep(0.1)
                     else:
                         time.sleep(0.1)
-                else:
-                    time.sleep(0.1)
 
-    except KeyboardInterrupt:
-        for y in range(DISPLAY_RESOLUTION[1]):
-            for x in range(DISPLAY_RESOLUTION[0]):
-                #It's not a bug it's a feature
-                strip[matrix[(x,y)]] = (0,0,0)
-                strip.show()
+        except KeyboardInterrupt:
+            for y in range(DISPLAY_RESOLUTION[1]):
+                for x in range(DISPLAY_RESOLUTION[0]):
+                    #It's not a bug it's a feature
+                    strip[matrix[(x,y)]] = (0,0,0)
+                    strip.show()
+    else:
+        strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=True)
+        try:
+            if args.delay:
+                delay = args.delay
+            else:
+                delay = 0.1
+            while True:
+                for i in range(LED_COUNT):
+                    strip[i] = (255,255,255)
+                    time.sleep(delay)
+                for i in range(LED_COUNT):
+                    strip[i] = (255,0,0)
+                    time.sleep(delay)
+                for i in range(LED_COUNT):
+                    strip[i] = (0,255,0)
+                    time.sleep(delay)
+                for i in range(LED_COUNT):
+                    strip[i] = (0,0,255)
+                    time.sleep(delay)
+        except KeyboardInterrupt:
+            for y in range(DISPLAY_RESOLUTION[1]):
+                for x in range(DISPLAY_RESOLUTION[0]):
+                    #It's not a bug it's a feature
+                    strip[matrix[(x,y)]] = (0,0,0)
