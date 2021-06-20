@@ -4,67 +4,92 @@ import neopixel
 from PIL import Image, ImageSequence
 import layout
 from filelock import Timeout, FileLock
-import pickle
+import os
+import random
+import glob
+import ast
 
-file_path = "waiting_line"
-lock_path = "waiting_line.lock"
 
-lock = FileLock(lock_path, timeout=1)
-
-def post_media():
-    """This method should connect to to the Media Input
-    In our case blinky_bot
-    Then it'll overwrite the background before beeing shown 
-    on the strip
-    Input should be given as coordinate with RGB value
-    """
-
+def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS=1, post = True):
     global active       #Are we displaying media atm?
     global start        #When did we start displaying media?
+    global update       #When did we update the waiting line
     global waiting_line #What media is queued?
 
-    def update_line():
-        done_media = []
-        with lock.acquire():
-            pfile = open(file_path, 'rb')
-            waiting_line_bot = pickle.load(pfile)
-            for media in waiting_line_bot:
-                if media not in waiting_line:
-                    done_media.append(media)
+    def update_line(lock):
+        with lock:
+            with open("/home/pi/ws2812b/config/waiting_line", 'r+') as f:
+                line = f.read()
+                waiting_line = ast.literal_eval('[' + line[:-1] + ']')
+                f.seek(0)
+                f.write('')
+                f.truncate()
+        return waiting_line
+
+
+    def draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS):
+        rgb_frame = frame.convert('RGB')
+        for y in range(DISPLAY_RESOLUTION[1]):
+            for x in range(DISPLAY_RESOLUTION[0]):
+                strip[matrix[(x,y)]] = tuple( int(x * BRIGHTNESS) for x in rgb_frame.getpixel((x,y)))
+        strip.show()
+        if 'duration' in frame.info:
+            if type(frame.info['duration']) is int:
+                time.sleep(frame.info['duration']/1000) 
+            else:
+                time.sleep(0.1)
+        else:
+            time.sleep(0.1)
+
+
+    background_gif = Image.open(path_to_gif + '.gif')
+    print(path_to_gif)
+    if (background_gif.size[0] < DISPLAY_RESOLUTION[0] or
+            background_gif.size[1] < DISPLAY_RESOLUTION[1]):
+        #fallback gif should be placed if the background is wrongly composed
+        background_gif = Image.open('fallback.gif')
+
+    for frame in ImageSequence.Iterator(background_gif):
+        draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
+        waiting_line = update_line(lock)
+        while waiting_line:
+            for media in waiting_line:
+                print(media)
+                forground_gif = Image.open('/home/pi/ws2812b/gifs/' + str(media) + '.gif')
+                if forground_gif.format == 'GIF':
+                    for frame in ImageSequence.Iterator(forground_gif):
+                        draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
                 else:
-                    break
-            waiting_line = [ x for x in waiting_line_bot if x not in done_media ]
-            pickle.dump( waiting_line, pfile )
+                    #photos in gif container get shown 5 seconds
+                    for n in range(50):
+                        draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
+                os.rename('/home/pi/ws2812b/gifs/' + str(media) + '.gif', '/home/pi/ws2812b/graveyard/' + str(time.time()) + '.gif')
+            waiting_line = update_line(lock)
 
 
-    def draw_media(media):
-        # pixel = [(x,y) , (int,int,int)]
-        for pixel in media:
-            strip[matrix[pixel[0]]] = pixel[1]
-
-    if active:
-        # pixel = [(x,y) , (int,int,int)]
-        draw_media(waiting_line[0])
-        if (time.time() - start) > 13:
-            waiting_line.pop(0)
-            active = False
-    elif waiting_line:
-        active = True
-        start = time.time()
-        draw_media(waiting_line[0])
+def files(path):
+    for file in os.listdir(path):
+        if os.path.isfile(os.path.join(path, file)):
+            yield file
 
 
+def init():
+    try:
+        open("/home/pi/ws2812b/config/waiting_line", 'r')
+    except:
+        open("/home/pi/ws2812b/config/waiting_line", 'w')
 
-if __name__ == '__main__':
+
+def main(X_BOXES, Y_BOXES, BRIGHTNES ):
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action="store_true",
                     help="debug mode")
     parser.add_argument("-dl", "--delay", type=float,
                     help="delay between set")
+    parser.add_argument("-bl", "--blink", action='store_true',
+                    help="delay between set")
 
-    X_BOXES = 1
-    Y_BOXES = 1
     LED_COUNT = X_BOXES * Y_BOXES * 20
     DISPLAY_RESOLUTION = (X_BOXES * 4, Y_BOXES * 5)
 
@@ -77,42 +102,57 @@ if __name__ == '__main__':
     #Setup Media Wait list
     waiting_line = []
     active = False
-    start = time.time()
+    start = update = time.time()
 
     args = parser.parse_args()
-    if not args.debug:
+
+
+    #TODO DEBUG
+    path_to_file='blinky'
+    if args.blink:
+        strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=True)
         try:
+            if args.delay:
+                delay = args.delay
+            else:
+                delay = 0.1
             while True:
-                #Load background gif. Should be exactly the Screen resolution
-                im = Image.open('blinky_test.gif')
-                if (im.size[0] < DISPLAY_RESOLUTION[0] or
-                        im.size[1] < DISPLAY_RESOLUTION[1]):
-                    #fallback gif should be placed if the background is wrongly composed
-                    im = Image.open('fallback.gif')
-
-                for frame in ImageSequence.Iterator(im):
-                    rgb_frame = frame.convert('RGB')
-                    for y in range(DISPLAY_RESOLUTION[1]):
-                        for x in range(DISPLAY_RESOLUTION[0]):
-                            strip[matrix[(x,y)]] = rgb_frame.getpixel((x,y))
-                    post_media()
-                    strip.show()
-                    #TODO Do gifs always have a duration?
-                    if 'duration' in frame.info:
-                        if type(frame.info['duration']) is int:
-                            time.sleep(frame.info['duration']/1000)
-                        else:
-                            time.sleep(0.1)
-                    else:
-                        time.sleep(0.1)
-
+                t = random.randint(0, 80)
+                for y in range(0,255):
+                    strip[t] = (y,y,y)
+                    time.sleep(delay)
+                    print(y)
+                u = random.randint(0, 80)
+                for y in range(0,255):
+                    strip[u] = (y,y,y)
+                    time.sleep(delay)
+                    print(y)
+                i = random.randint(0, 80)
+                for y in range(0,255):
+                    strip[i] = (y,y,y)
+                    time.sleep(delay)
+                    print(y)
+                for y in range(255,-1,-1):
+                    strip[i] = (y,y,y)
+                    time.sleep(delay)
+                    print(y)
+                for y in range(255,-1,-1):
+                    strip[t] = (y,y,y)
+                    time.sleep(delay)
+                    print(y)
+                for y in range(255,-1,-1):
+                    strip[u] = (y,y,y)
+                    time.sleep(delay)
+                    print(y)
         except KeyboardInterrupt:
             for y in range(DISPLAY_RESOLUTION[1]):
                 for x in range(DISPLAY_RESOLUTION[0]):
                     #It's not a bug it's a feature
                     strip[matrix[(x,y)]] = (0,0,0)
                     strip.show()
-    else:
+
+
+    elif args.debug:
         strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=True)
         try:
             if args.delay:
@@ -137,3 +177,32 @@ if __name__ == '__main__':
                 for x in range(DISPLAY_RESOLUTION[0]):
                     #It's not a bug it's a feature
                     strip[matrix[(x,y)]] = (0,0,0)
+
+
+    else:
+        try:
+            os.makedirs("/home/pi/ws2812b/graveyard", exist_ok=True)
+            os.chown("/home/pi/ws2812b/graveyard", uid=1000, gid=1000)
+            os.makedirs("/home/pi/ws2812b/gifs", exist_ok=True)
+            os.chown("/home/pi/ws2812b/gifs", uid=1000, gid=1000)
+            file_path = "/home/pi/ws2812b/config/waiting_line"
+            lock_path = "/home/pi/ws2812b/config/waiting_line.lock"
+
+            lock = FileLock(lock_path, timeout=5)
+            mylist = [f[:-4] for f in glob.glob("/home/pi/ws2812b/backgrounds/*.gif")]
+            while True:
+                #TODO loop through backgrounds
+                #Load background gif. Should be exactly the Screen resolution
+                options = [f for f in files("/home/pi/ws2812b/config/")]
+                brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
+                print(brightness)
+                display_gif(strip, matrix, random.choice(mylist), DISPLAY_RESOLUTION, lock, BRIGHTNESS=brightness)
+
+        except KeyboardInterrupt:
+            for y in range(DISPLAY_RESOLUTION[1]):
+                for x in range(DISPLAY_RESOLUTION[0]):
+                    #It's not a bug it's a feature
+                    strip[matrix[(x,y)]] = (0,0,0)
+if __name__ == '__main__':
+    init()
+    main(4,1,1)
