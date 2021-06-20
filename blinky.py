@@ -8,6 +8,7 @@ import os
 import random
 import glob
 import ast
+from systemd import journal
 
 
 def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS=1, post = True):
@@ -43,7 +44,7 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
 
 
     background_gif = Image.open(path_to_gif + '.gif')
-    print(path_to_gif)
+    journal.write(f'Back: {path_to_gif}.gif')
     if (background_gif.size[0] < DISPLAY_RESOLUTION[0] or
             background_gif.size[1] < DISPLAY_RESOLUTION[1]):
         #fallback gif should be placed if the background is wrongly composed
@@ -54,7 +55,8 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
         waiting_line = update_line(lock)
         while waiting_line:
             for media in waiting_line:
-                print(media)
+                BRIGHTNESS = set_brightness
+                journal.write(f'Fore: {media}.gif')
                 forground_gif = Image.open('/home/pi/ws2812b/gifs/' + str(media) + '.gif')
                 if forground_gif.format == 'GIF':
                     for frame in ImageSequence.Iterator(forground_gif):
@@ -65,6 +67,14 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
                         draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
                 os.rename('/home/pi/ws2812b/gifs/' + str(media) + '.gif', '/home/pi/ws2812b/graveyard/' + str(time.time()) + '.gif')
             waiting_line = update_line(lock)
+
+
+def set_brightness():
+    options = [f for f in files("/home/pi/ws2812b/config/")]
+    brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
+    journal.write(f'Set Brightness: {brightness}')
+    return brightness
+
 
 
 def files(path):
@@ -193,9 +203,7 @@ def main(X_BOXES, Y_BOXES, BRIGHTNES ):
             while True:
                 #TODO loop through backgrounds
                 #Load background gif. Should be exactly the Screen resolution
-                options = [f for f in files("/home/pi/ws2812b/config/")]
-                brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
-                print(brightness)
+                brightness = set_brightness()
                 display_gif(strip, matrix, random.choice(mylist), DISPLAY_RESOLUTION, lock, BRIGHTNESS=brightness)
 
         except KeyboardInterrupt:
