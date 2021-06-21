@@ -96,8 +96,8 @@ def main(X_BOXES, Y_BOXES, BRIGHTNES ):
                     help="debug mode")
     parser.add_argument("-dl", "--delay", type=float,
                     help="delay between set")
-    parser.add_argument("-bl", "--blink", action='store_true',
-                    help="delay between set")
+    parser.add_argument("-b", "--brightness", type=float, default=1.0,
+                    help="Set brightness")
 
     LED_COUNT = X_BOXES * Y_BOXES * 20
     DISPLAY_RESOLUTION = (X_BOXES * 4, Y_BOXES * 5)
@@ -117,51 +117,7 @@ def main(X_BOXES, Y_BOXES, BRIGHTNES ):
 
 
     #TODO DEBUG
-    path_to_file='blinky'
-    if args.blink:
-        strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=True)
-        try:
-            if args.delay:
-                delay = args.delay
-            else:
-                delay = 0.1
-            while True:
-                t = random.randint(0, 80)
-                for y in range(0,255):
-                    strip[t] = (y,y,y)
-                    time.sleep(delay)
-                    print(y)
-                u = random.randint(0, 80)
-                for y in range(0,255):
-                    strip[u] = (y,y,y)
-                    time.sleep(delay)
-                    print(y)
-                i = random.randint(0, 80)
-                for y in range(0,255):
-                    strip[i] = (y,y,y)
-                    time.sleep(delay)
-                    print(y)
-                for y in range(255,-1,-1):
-                    strip[i] = (y,y,y)
-                    time.sleep(delay)
-                    print(y)
-                for y in range(255,-1,-1):
-                    strip[t] = (y,y,y)
-                    time.sleep(delay)
-                    print(y)
-                for y in range(255,-1,-1):
-                    strip[u] = (y,y,y)
-                    time.sleep(delay)
-                    print(y)
-        except KeyboardInterrupt:
-            for y in range(DISPLAY_RESOLUTION[1]):
-                for x in range(DISPLAY_RESOLUTION[0]):
-                    #It's not a bug it's a feature
-                    strip[matrix[(x,y)]] = (0,0,0)
-                    strip.show()
-
-
-    elif args.debug:
+    if args.debug:
         strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=True)
         try:
             if args.delay:

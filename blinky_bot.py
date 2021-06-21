@@ -56,7 +56,6 @@ def help(update, context):
 def brightness(update, context):
     """Send a message when the command /brightness is issued."""
     option = glob.glob('/home/pi/ws2812b/config/BRIGHTNESS=*')
-    print(context.args[0])
     os.rename(option[0], '/home/pi/ws2812b/config/BRIGHTNESS=' + context.args[0])
 
 
