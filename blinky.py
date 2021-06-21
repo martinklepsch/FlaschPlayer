@@ -19,12 +19,13 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
 
     def update_line(lock):
         with lock:
-            with open("/home/pi/ws2812b/config/waiting_line", 'r+') as f:
+            with open("/home/pi/ws2812b/config/waiting_line", 'r') as f:
                 line = f.read()
+                if len(line) > 1:
+                    journal.write(f'waiting line: {line}')
                 waiting_line = ast.literal_eval('[' + line[:-1] + ']')
-                f.seek(0)
+            with open("/home/pi/ws2812b/config/waiting_line", 'w') as f:
                 f.write('')
-                f.truncate()
         return waiting_line
 
 
@@ -84,10 +85,8 @@ def files(path):
 
 
 def init():
-    try:
-        open("/home/pi/ws2812b/config/waiting_line", 'r')
-    except:
-        open("/home/pi/ws2812b/config/waiting_line", 'w')
+    with open("/home/pi/ws2812b/config/waiting_line", 'w') as f:
+        f.write('')
 
 
 def main(X_BOXES, Y_BOXES, BRIGHTNES ):
