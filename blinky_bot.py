@@ -161,4 +161,6 @@ def main():
 
 
 if __name__ == '__main__':
+    logger.info('############################################')
+    logger.info('Starting Blinky Bot')
     main()

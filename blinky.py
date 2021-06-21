@@ -211,5 +211,7 @@ def main(X_BOXES, Y_BOXES, BRIGHTNES ):
                     #It's not a bug it's a feature
                     strip[matrix[(x,y)]] = (0,0,0)
 if __name__ == '__main__':
+    journal.write('############################################')
+    journal.write('Starting Blinky')
     init()
-    main(4,1,1)
+    main(5,2,1)
