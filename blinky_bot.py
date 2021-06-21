@@ -22,13 +22,15 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from PIL import Image
 from ffmpy import FFmpeg
 from filelock import Timeout, FileLock
-import pickle
 import os
 import glob
 file_path = "/home/pi/ws2812b/config/waiting_line"
 lock_path = "/home/pi/ws2812b/config/waiting_line.lock"
 
 lock = FileLock(lock_path, timeout=10)
+#Init of waiting line as empty file
+with open(file_path, 'w') as f:
+    f.write('')
 
 gif_counter = 0
 
@@ -69,75 +71,56 @@ I'm just an everyday bot. \n\n
 Anyways, wanna give me a gif or a picture so I can resize it 
 to 20x15 pixel and show you? :D""")
 
-def gif_handler(update, context):
-    print('Gif Handler')
-    global gif_counter
-    try:
-        mp4 = context.bot.getFile(update.message.document.file_id)
-        mp4.download('media.mp4')
-        ff = FFmpeg(
-                inputs={'media.mp4': '-y'}, #TODO REmove the -y ??/
-                #outputs={'blinky.gif': '-s 20x15'})
-                outputs={'/home/pi/ws2812b/gifs/' + str(gif_counter) + '.gif': '-s 20x15'})
-        ff.run()
-    except:
-        print('FFmpeg Error!')
-    try:
-        with lock:
-            with open(file_path, 'r') as f:
-                line = f.read()
-            with open(file_path, 'w') as f:
-                f.write(line + str(gif_counter) + ',')
-        gif_counter += 1
-    except Timeout:
-        print('Cant accuire lock!')
-
-
-def image_handler(update, context):
-    print('Image Handler')
-    global gif_counter
-    try:
-        pic = context.bot.getFile(update.message.photo[-1].file_id)
-        pic.download('photo.gif')
-        ff = FFmpeg(
-                inputs={'photo.gif': '-y'}, #TODO REmove the -y ??/
-                outputs={'/home/pi/ws2812b/gifs/' + str(gif_counter) + '.gif': '-s 20x15'})
-        ff.run()
-    except:
-        print('FFmpeg Error!')
-    try:
-        with lock:
-            with open(file_path, 'r') as f:
-                line = f.read()
-            with open(file_path, 'w') as f:
-                f.write(line + str(gif_counter) + ',')
-        gif_counter += 1
-    except Timeout:
-        print('Cant accuire lock!')
-
-
 def voice_handler(update, context):
-    print('voice Handler')
-    fid = update.message.voice.file_id
-    data = context.bot.getFile(file_id=fid)
-    print ("file_id: " + str(update.message.voice.file_id))
-    data.download('voice.ogg')
+    update.message.reply_text("""Sorry this is not a gif or a picture and 
+I have no clue how to write text to that display thing there.
+I mean have you seen how that works? It's fucking nuts.
+I don't even know how to make letters that small and 
+I'm just an everyday bot. \n\n
+Anyways, wanna give me a gif or a picture so I can resize it 
+to 20x15 pixel and show you? :D""")
 
 
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
-def init_waiting_line():
+
+def gif_handler(update, context):
+    mp4 = context.bot.getFile(update.message.document.file_id)
+    mp4.download('/home/pi/ws2812b/media.mp4')
+    put_gifs('/home/pi/ws2812b/media.gif')
+
+
+def image_handler(update, context):
+    pic = context.bot.getFile(update.message.photo[-1].file_id)
+    pic.download('/home/pi/ws2812b/photo.gif')
+    put_gifs('/home/pi/ws2812b/photo.gif')
+
+
+def put_gifs(telegram_file):
+    global gif_counter
+    try:
+        ff = FFmpeg(
+                inputs={telegram_file: '-y -hide_banner -loglevel error'}, #TODO REmove the -y ??/
+                outputs={'/home/pi/ws2812b/gifs/' + str(gif_counter) + '.gif': '-s 20x15'})
+        ff.run()
+        try:
+            with open('/home/pi/ws2812b/gifs/' + str(gif_counter) + '.gif') as f:
+                logger.info(f'Gif creation succesfull: '+ str(gif_counter) + '.gif')
+        except IOError:
+            logger.warning(f'Gif creation failed: ' + str(gif_counter) + '.gif')
+    except:
+        logger.warning('FFmpeg Error!')
     try:
         with lock:
-            pfile = open(file_path, 'wb')
-            waiting_line = []
-            pickle.dump(waiting_line, pfile)
+            with open(file_path, 'r') as f:
+                line = f.read()
+            with open(file_path, 'w') as f:
+                f.write(line + str(gif_counter) + ',')
         gif_counter += 1
     except Timeout:
-        print('Cant accuire lock!')
-
+        logger.warning('Cant accuire lock!')
 
 
 def main():
