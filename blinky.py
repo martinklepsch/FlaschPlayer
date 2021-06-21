@@ -55,7 +55,7 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
         waiting_line = update_line(lock)
         while waiting_line:
             for media in waiting_line:
-                BRIGHTNESS = set_brightness
+                BRIGHTNESS = set_brightness()
                 journal.write(f'Fore: {media}.gif')
                 forground_gif = Image.open('/home/pi/ws2812b/gifs/' + str(media) + '.gif')
                 if forground_gif.format == 'GIF':
