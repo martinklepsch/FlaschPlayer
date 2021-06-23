@@ -49,19 +49,24 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
     if (background_gif.size[0] < DISPLAY_RESOLUTION[0] or
             background_gif.size[1] < DISPLAY_RESOLUTION[1]):
         #fallback gif should be placed if the background is wrongly composed
-        background_gif = Image.open('fallback.gif')
+        background_gif = Image.open('/home/pi/ws2812b/config/fallback.gif')
 
     for frame in ImageSequence.Iterator(background_gif):
+        BRIGHTNESS = set_brightness(BRIGHTNESS)
         draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
         waiting_line = update_line(lock)
         while waiting_line:
             for media in waiting_line:
-                BRIGHTNESS = set_brightness()
+                BRIGHTNESS = set_brightness(BRIGHTNESS)
                 journal.write(f'Fore: {media}.gif')
-                forground_gif = Image.open('/home/pi/ws2812b/gifs/' + str(media) + '.gif')
-                if forground_gif.format == 'GIF':
-                    for frame in ImageSequence.Iterator(forground_gif):
-                        draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
+                foreground_gif = Image.open('/home/pi/ws2812b/gifs/' + str(media) + '.gif')
+                if foreground_gif.format == 'GIF':
+                    #Adding the durations of every frame until at least 5 sec runtime
+                    runtime = 0
+                    while runtime <= 5000:
+                        for frame in ImageSequence.Iterator(foreground_gif):
+                            runtime += frame.info['duration']
+                            draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
                 else:
                     #photos in gif container get shown 5 seconds
                     for n in range(50):

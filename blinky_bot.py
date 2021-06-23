@@ -61,6 +61,7 @@ def brightness(update, context):
 
 def echo(update, context):
     """Echo the user message."""
+    logger.info(f'Starting Echo Handler')
     #update.message.reply_text(update.message.text)
     update.message.reply_text("""Sorry this is not a gif or a picture and 
 I have no clue how to write text to that display thing there.
@@ -86,12 +87,14 @@ def error(update, context):
 
 
 def gif_handler(update, context):
+    logger.info(f'Starting Gif Handler')
     mp4 = context.bot.getFile(update.message.document.file_id)
     mp4.download('/home/pi/ws2812b/media.mp4')
     put_gifs('/home/pi/ws2812b/media.gif')
 
 
 def image_handler(update, context):
+    logger.info(f'Starting Image Handler')
     pic = context.bot.getFile(update.message.photo[-1].file_id)
     pic.download('/home/pi/ws2812b/photo.gif')
     put_gifs('/home/pi/ws2812b/photo.gif')
