@@ -75,11 +75,41 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
             waiting_line = update_line(lock)
 
 
-def set_brightness():
+def set_brightness(BRIGHTNESS):
+    """Lists all files in config folder and extracts the option from 
+    the file name."""
     options = [f for f in files("/home/pi/ws2812b/config/")]
-    brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
-    journal.write(f'Set Brightness: {brightness}')
+    try:
+        brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
+    except:
+        brightness = 1.0
+        journal.write(f'ERROR: Reset Brightness: {brightness}')
+    if brightness != BRIGHTNESS:
+        journal.write(f'Set Brightness: {brightness}')
     return brightness
+
+
+def debug(delay):
+    strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=True)
+    try:
+        while True:
+            for i in range(LED_COUNT):
+                strip[i] = (255,255,255)
+                time.sleep(delay)
+            for i in range(LED_COUNT):
+                strip[i] = (255,0,0)
+                time.sleep(delay)
+            for i in range(LED_COUNT):
+                strip[i] = (0,255,0)
+                time.sleep(delay)
+            for i in range(LED_COUNT):
+                strip[i] = (0,0,255)
+                time.sleep(delay)
+    except KeyboardInterrupt:
+        for y in range(DISPLAY_RESOLUTION[1]):
+            for x in range(DISPLAY_RESOLUTION[0]):
+                #It's not a bug it's a feature
+                strip[matrix[(x,y)]] = (0,0,0)
 
 
 
@@ -94,15 +124,7 @@ def init():
         f.write('')
 
 
-def main(X_BOXES, Y_BOXES, BRIGHTNES ):
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--debug", action="store_true",
-                    help="debug mode")
-    parser.add_argument("-dl", "--delay", type=float,
-                    help="delay between set")
-    parser.add_argument("-b", "--brightness", type=float, default=1.0,
-                    help="Set brightness")
+def main(X_BOXES=5, Y_BOXES=3, BRIGHTNESS=1.0):
 
     LED_COUNT = X_BOXES * Y_BOXES * 20
     DISPLAY_RESOLUTION = (X_BOXES * 4, Y_BOXES * 5)
@@ -118,61 +140,42 @@ def main(X_BOXES, Y_BOXES, BRIGHTNES ):
     active = False
     start = update = time.time()
 
-    args = parser.parse_args()
+    try:
+        os.makedirs("/home/pi/ws2812b/graveyard", exist_ok=True)
+        os.chown("/home/pi/ws2812b/graveyard", uid=1000, gid=1000)
+        os.makedirs("/home/pi/ws2812b/gifs", exist_ok=True)
+        os.chown("/home/pi/ws2812b/gifs", uid=1000, gid=1000)
+        file_path = "/home/pi/ws2812b/config/waiting_line"
+        lock_path = "/home/pi/ws2812b/config/waiting_line.lock"
 
+        lock = FileLock(lock_path, timeout=5)
+        mylist = [f[:-4] for f in glob.glob("/home/pi/ws2812b/backgrounds/*.gif")]
+        while True:
+            #TODO loop through backgrounds
+            #Load background gif. Should be exactly the Screen resolution
+            display_gif(strip, matrix, random.choice(mylist), DISPLAY_RESOLUTION, lock, BRIGHTNESS)
 
-    #TODO DEBUG
-    if args.debug:
-        strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=True)
-        try:
-            if args.delay:
-                delay = args.delay
-            else:
-                delay = 0.1
-            while True:
-                for i in range(LED_COUNT):
-                    strip[i] = (255,255,255)
-                    time.sleep(delay)
-                for i in range(LED_COUNT):
-                    strip[i] = (255,0,0)
-                    time.sleep(delay)
-                for i in range(LED_COUNT):
-                    strip[i] = (0,255,0)
-                    time.sleep(delay)
-                for i in range(LED_COUNT):
-                    strip[i] = (0,0,255)
-                    time.sleep(delay)
-        except KeyboardInterrupt:
-            for y in range(DISPLAY_RESOLUTION[1]):
-                for x in range(DISPLAY_RESOLUTION[0]):
-                    #It's not a bug it's a feature
-                    strip[matrix[(x,y)]] = (0,0,0)
-
-
-    else:
-        try:
-            os.makedirs("/home/pi/ws2812b/graveyard", exist_ok=True)
-            os.chown("/home/pi/ws2812b/graveyard", uid=1000, gid=1000)
-            os.makedirs("/home/pi/ws2812b/gifs", exist_ok=True)
-            os.chown("/home/pi/ws2812b/gifs", uid=1000, gid=1000)
-            file_path = "/home/pi/ws2812b/config/waiting_line"
-            lock_path = "/home/pi/ws2812b/config/waiting_line.lock"
-
-            lock = FileLock(lock_path, timeout=5)
-            mylist = [f[:-4] for f in glob.glob("/home/pi/ws2812b/backgrounds/*.gif")]
-            while True:
-                #TODO loop through backgrounds
-                #Load background gif. Should be exactly the Screen resolution
-                brightness = set_brightness()
-                display_gif(strip, matrix, random.choice(mylist), DISPLAY_RESOLUTION, lock, BRIGHTNESS=brightness)
-
-        except KeyboardInterrupt:
-            for y in range(DISPLAY_RESOLUTION[1]):
-                for x in range(DISPLAY_RESOLUTION[0]):
-                    #It's not a bug it's a feature
-                    strip[matrix[(x,y)]] = (0,0,0)
+    except KeyboardInterrupt:
+        for y in range(DISPLAY_RESOLUTION[1]):
+            for x in range(DISPLAY_RESOLUTION[0]):
+                #It's not a bug it's a feature
+                strip[matrix[(x,y)]] = (0,0,0)
 if __name__ == '__main__':
     journal.write('############################################')
     journal.write('Starting Blinky')
-    init()
-    main(5,2,1)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--debug", action="store_true", default=False,
+                    help="debug mode")
+    parser.add_argument("-dl", "--delay", type=float, default=0.01,
+                    help="delay between set")
+    parser.add_argument("-b", "--brightness", type=float, default=1.0,
+                    help="Set brightness")
+    args = parser.parse_args()
+
+
+    if not args.debug:
+        init()
+        main()
+    elif args.debug:
+        debug(args.delay)

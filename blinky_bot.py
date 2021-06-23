@@ -109,9 +109,9 @@ def put_gifs(telegram_file):
         ff.run()
         try:
             with open('/home/pi/ws2812b/gifs/' + str(gif_counter) + '.gif') as f:
-                logger.info(f'Gif creation succesfull: '+ str(gif_counter) + '.gif')
+                logger.info(f'Gif creation succesfull: {gif_counter}.gif')
         except IOError:
-            logger.warning(f'Gif creation failed: ' + str(gif_counter) + '.gif')
+            logger.warning(f'Gif creation failed: {gif_counter}.gif')
     except:
         logger.warning('FFmpeg Error!')
     try:
