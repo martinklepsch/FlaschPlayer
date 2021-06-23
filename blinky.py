@@ -1,21 +1,26 @@
+"""Blinky: Main contributer to FlaschPlayer"""
 import time
-import board
-import neopixel
-from PIL import Image, ImageSequence
-import layout
-from filelock import Timeout, FileLock
 import os
 import random
 import glob
 import ast
+import board
+import neopixel
+from PIL import Image, ImageSequence
 from systemd import journal
+from filelock import FileLock
+import layout
 
 
-def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS=1, post = True):
-    global active       #Are we displaying media atm?
-    global start        #When did we start displaying media?
-    global update       #When did we update the waiting line
-    global waiting_line #What media is queued?
+def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
+    """Main action point
+
+    The methods takes the background gif and sets frame by frame
+    every pixel. After every frame the strip.show() method is called.
+    Also the waiting list is checked. If a gif is in the list
+    it will be displayed immediately. This repeats until no further
+    gifs are in line"""
+
 
     def update_line(lock):
         with lock:
@@ -29,15 +34,16 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
         return waiting_line
 
 
-    def draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS):
+    def draw_frame(frame, display_resolution, bright):
         rgb_frame = frame.convert('RGB')
-        for y in range(DISPLAY_RESOLUTION[1]):
-            for x in range(DISPLAY_RESOLUTION[0]):
-                strip[matrix[(x,y)]] = tuple( int(x * BRIGHTNESS) for x in rgb_frame.getpixel((x,y)))
+        for y in range(display_resolution[1]):
+            for x in range(display_resolution[0]):
+                strip[matrix[(x, y)]] = tuple(
+                    int(x * bright) for x in rgb_frame.getpixel((x, y)))
         strip.show()
         if 'duration' in frame.info:
-            if type(frame.info['duration']) is int:
-                time.sleep(frame.info['duration']/1000) 
+            if isinstance(frame.info['duration'], int):
+                time.sleep(frame.info['duration']/1000)
             else:
                 time.sleep(0.1)
         else:
@@ -46,136 +52,135 @@ def display_gif(strip, matrix, path_to_gif, DISPLAY_RESOLUTION, lock, BRIGHTNESS
 
     background_gif = Image.open(path_to_gif + '.gif')
     journal.write(f'Back: {path_to_gif}.gif')
-    if (background_gif.size[0] < DISPLAY_RESOLUTION[0] or
-            background_gif.size[1] < DISPLAY_RESOLUTION[1]):
+    if (background_gif.size[0] < display_resolution[0] or
+            background_gif.size[1] < display_resolution[1]):
         #fallback gif should be placed if the background is wrongly composed
         background_gif = Image.open('/home/pi/ws2812b/config/fallback.gif')
 
+    #pylint: disable=too-many-nested-blocks
     for frame in ImageSequence.Iterator(background_gif):
-        BRIGHTNESS = set_brightness(BRIGHTNESS)
-        draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
+        bright = set_brightness()
+        draw_frame(frame, display_resolution, bright)
         waiting_line = update_line(lock)
         while waiting_line:
             for media in waiting_line:
-                BRIGHTNESS = set_brightness(BRIGHTNESS)
+                bright = set_brightness()
                 journal.write(f'Fore: {media}.gif')
-                foreground_gif = Image.open('/home/pi/ws2812b/gifs/' + str(media) + '.gif')
-                if foreground_gif.format == 'GIF':
+                foreground_gif = Image.open(f'/home/pi/ws2812b/gifs/{media}.gif')
+                if 'duration' in foreground_gif.info:
                     #Adding the durations of every frame until at least 5 sec runtime
                     runtime = 0
                     while runtime <= 5000:
+                        #pylint: disable=redefined-outer-name
                         for frame in ImageSequence.Iterator(foreground_gif):
                             runtime += frame.info['duration']
-                            draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
+                            draw_frame(frame, display_resolution, bright)
                 else:
                     #photos in gif container get shown 5 seconds
-                    for n in range(50):
-                        draw_frame(frame, DISPLAY_RESOLUTION, BRIGHTNESS)
-                os.rename('/home/pi/ws2812b/gifs/' + str(media) + '.gif', '/home/pi/ws2812b/graveyard/' + str(time.time()) + '.gif')
+                    for _ in range(50):
+                        draw_frame(foreground_gif, display_resolution, bright)
+                os.rename('/home/pi/ws2812b/gifs/{media}.gif',
+                          '/home/pi/ws2812b/graveyard/{time.time()}.gif')
             waiting_line = update_line(lock)
 
 
-def set_brightness(BRIGHTNESS):
-    """Lists all files in config folder and extracts the option from 
+def set_brightness():
+    """Lists all files in config folder and extracts the option from
     the file name."""
     options = [f for f in files("/home/pi/ws2812b/config/")]
     try:
         brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
-    except:
+    except ValueError:
         brightness = 1.0
         journal.write(f'ERROR: Reset Brightness: {brightness}')
-    if brightness != BRIGHTNESS:
-        journal.write(f'Set Brightness: {brightness}')
     return brightness
 
 
-def debug(delay):
-    strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=True)
+def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
+    """Debug Mode to test all RGB colors at any led"""
+    display_resolution, strip, matrix, led_count = init(x_boxes, y_boxes, bright, n_led=True)
+    strip = neopixel.NeoPixel(board.D18, led_count, brightness=bright, auto_write=True)
     try:
         while True:
-            for i in range(LED_COUNT):
-                strip[i] = (255,255,255)
+            for i in range(led_count):
+                strip[i] = (255, 255, 255)
                 time.sleep(delay)
-            for i in range(LED_COUNT):
-                strip[i] = (255,0,0)
+            for i in range(led_count):
+                strip[i] = (255, 0, 0)
                 time.sleep(delay)
-            for i in range(LED_COUNT):
-                strip[i] = (0,255,0)
+            for i in range(led_count):
+                strip[i] = (0, 255, 0)
                 time.sleep(delay)
-            for i in range(LED_COUNT):
-                strip[i] = (0,0,255)
+            for i in range(led_count):
+                strip[i] = (0, 0, 255)
                 time.sleep(delay)
     except KeyboardInterrupt:
-        for y in range(DISPLAY_RESOLUTION[1]):
-            for x in range(DISPLAY_RESOLUTION[0]):
+        for y in range(display_resolution[1]):
+            for x in range(display_resolution[0]):
                 #It's not a bug it's a feature
-                strip[matrix[(x,y)]] = (0,0,0)
+                strip[matrix[(x, y)]] = (0, 0, 0)
 
 
 
 def files(path):
+    """generator object to list files in folder(config)"""
     for file in os.listdir(path):
         if os.path.isfile(os.path.join(path, file)):
             yield file
 
 
-def init():
-    with open("/home/pi/ws2812b/config/waiting_line", 'w') as f:
-        f.write('')
-
-
-def main(X_BOXES=5, Y_BOXES=3, BRIGHTNESS=1.0):
-
-    LED_COUNT = X_BOXES * Y_BOXES * 20
-    DISPLAY_RESOLUTION = (X_BOXES * 4, Y_BOXES * 5)
+def init(x_boxes, y_boxes, brightness=1, n_led=False):
+    """initializing the strip and calclate the mapping"""
+    led_count = x_boxes * y_boxes * 20
+    display_resolution = (x_boxes * 4, y_boxes * 5)
 
     #Setup LED stripe
-    strip = neopixel.NeoPixel(board.D18, LED_COUNT,brightness=1,auto_write=False)
+    strip = neopixel.NeoPixel(board.D18, led_count, brightness=brightness, auto_write=False)
 
     #Setup Display Matrix
-    matrix = layout.full_layout(X_BOXES, Y_BOXES)
+    matrix = layout.full_layout(x_boxes, y_boxes)
+    with open("/home/pi/ws2812b/config/waiting_line", 'w') as f:
+        f.write('')
+    if n_led:
+        return display_resolution, strip, matrix, led_count
+    else:
+        return display_resolution, strip, matrix
+
+
+def main(x_boxes=5, y_boxes=3):
+    """initializing folders, filelock, background gifs and runing the display"""
+
+    display_resolution, strip, matrix = init(x_boxes, y_boxes)
+
 
     #Setup Media Wait list
-    waiting_line = []
-    active = False
-    start = update = time.time()
 
-    try:
-        os.makedirs("/home/pi/ws2812b/graveyard", exist_ok=True)
-        os.chown("/home/pi/ws2812b/graveyard", uid=1000, gid=1000)
-        os.makedirs("/home/pi/ws2812b/gifs", exist_ok=True)
-        os.chown("/home/pi/ws2812b/gifs", uid=1000, gid=1000)
-        file_path = "/home/pi/ws2812b/config/waiting_line"
-        lock_path = "/home/pi/ws2812b/config/waiting_line.lock"
+    os.makedirs("/home/pi/ws2812b/graveyard", exist_ok=True)
+    os.chown("/home/pi/ws2812b/graveyard", uid=1000, gid=1000)
+    os.makedirs("/home/pi/ws2812b/gifs", exist_ok=True)
+    os.chown("/home/pi/ws2812b/gifs", uid=1000, gid=1000)
 
-        lock = FileLock(lock_path, timeout=5)
-        mylist = [f[:-4] for f in glob.glob("/home/pi/ws2812b/backgrounds/*.gif")]
-        while True:
-            #TODO loop through backgrounds
-            #Load background gif. Should be exactly the Screen resolution
-            display_gif(strip, matrix, random.choice(mylist), DISPLAY_RESOLUTION, lock, BRIGHTNESS)
+    lock = FileLock("/home/pi/ws2812b/config/waiting_line.lock", timeout=5)
+    mylist = [f[:-4] for f in glob.glob("/home/pi/ws2812b/backgrounds/*.gif")]
 
-    except KeyboardInterrupt:
-        for y in range(DISPLAY_RESOLUTION[1]):
-            for x in range(DISPLAY_RESOLUTION[0]):
-                #It's not a bug it's a feature
-                strip[matrix[(x,y)]] = (0,0,0)
+    while True:
+        display_gif(strip, matrix, random.choice(mylist), display_resolution, lock)
+
 if __name__ == '__main__':
     journal.write('############################################')
     journal.write('Starting Blinky')
     import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--debug", action="store_true", default=False,
-                    help="debug mode")
-    parser.add_argument("-dl", "--delay", type=float, default=0.01,
-                    help="delay between set")
-    parser.add_argument("-b", "--brightness", type=float, default=1.0,
-                    help="Set brightness")
-    args = parser.parse_args()
+    PARSER = argparse.ArgumentParser()
+    PARSER.add_argument("-d", "--debug", action="store_true", default=False,
+                        help="debug mode")
+    PARSER.add_argument("-dl", "--delay", type=float, default=0.01,
+                        help="delay between set")
+    PARSER.add_argument("-b", "--brightness", type=float, default=1.0,
+                        help="Set brightness")
+    ARGS = PARSER.parse_args()
 
 
-    if not args.debug:
-        init()
+    if not ARGS.debug:
         main()
-    elif args.debug:
-        debug(args.delay)
+    elif ARGS.debug:
+        debug(ARGS.delay)
