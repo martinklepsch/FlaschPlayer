@@ -38,7 +38,7 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
         rgb_frame = frame.convert('RGB')
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
-                strip[matrix[(x, y)]] = tuple(
+                strip[matrix[y][x]] = tuple(
                     int(x * bright) for x in rgb_frame.getpixel((x, y)))
         strip.show()
         if 'duration' in frame.info:
@@ -118,7 +118,7 @@ def debug(delay, x_boxes=5, y_boxes=3, bright=1.0):
         for y in range(display_resolution[1]):
             for x in range(display_resolution[0]):
                 #It's not a bug it's a feature
-                strip[matrix[(x, y)]] = (0, 0, 0)
+                strip[matrix[y][x]] = (0, 0, 0)
 
 
 
@@ -138,7 +138,8 @@ def init(x_boxes, y_boxes, brightness=1, n_led=False):
     strip = neopixel.NeoPixel(board.D18, led_count, brightness=brightness, auto_write=False)
 
     #Setup Display Matrix
-    matrix = layout.full_layout(x_boxes, y_boxes)
+    #matrix[y][x] = led_id
+    matrix = layout.full_layout(x_boxes, y_boxes, vert=True)
     with open("/home/pi/ws2812b/config/waiting_line", 'w') as f:
         f.write('')
     if n_led:
