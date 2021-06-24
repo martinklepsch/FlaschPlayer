@@ -21,8 +21,11 @@ pip install -r requirements.txt
 
 **Some packages for neopixel/raspberry pi stuff are missing**
 
-Save and commit dependencies:
+### Managing Dependencies
+
+Install, save and commit dependencies:
 ```
+pip install some-package
 pip freeze > requirements.txt
 git add requirements.txt
 git commit -m 'update dependencies'
@@ -41,3 +44,7 @@ echo 'export WAIT_DIR=/some/directory' >> .envrc
 ### Telegram
 
 Requires a bot token created via @BotFather.
+
+```
+export BOT_TOKEN=some-token
+```
