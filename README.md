@@ -21,6 +21,15 @@ git add requirements.txt
 git commit -m 'update dependencies'
 ```
 
+### Environment Setup
+
+Install [direnv](https://direnv.net/)
+
+```
+echo 'export BOT_TOKEN=xyz-your-token-xyz' >> .envrc
+```
+
+
 ### Telegram
 
 Requires a bot token created via @BotFather.

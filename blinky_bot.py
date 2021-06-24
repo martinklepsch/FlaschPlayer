@@ -130,8 +130,7 @@ def main():
     # Create the Updater and pass it your bot's token.
     # Make sure to set use_context=True to use the new context based callbacks
     # Post version 12 this will no longer be necessary
-    with open('/home/pi/ws2812b/telegram_token', 'r') as f:
-        token = f.read()[:-1]
+    token = os.environ['BOT_TOKEN']
     logger.info(f'Token: {token}')
     updater = Updater(token, use_context=True)
 
