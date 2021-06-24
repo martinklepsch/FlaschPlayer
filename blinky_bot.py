@@ -23,13 +23,12 @@ from PIL import Image
 from ffmpy import FFmpeg
 from filelock import Timeout, FileLock
 import os
+import config
 import glob
-lock_path = "/home/pi/ws2812b/config/waiting_line.lock"
-file_path = os.environ['WAIT_DIR']
 
-lock = FileLock(lock_path, timeout=10)
+lock = FileLock(config.waiting_line_lock, timeout=10)
 #Init of waiting line as empty file
-with open(file_path, 'w') as f:
+with open(config.waiting_line, 'w') as f:
     f.write('')
 
 gif_counter = 0
@@ -116,9 +115,9 @@ def put_gifs(telegram_file):
         logger.warning('FFmpeg Error!')
     try:
         with lock:
-            with open(file_path, 'r') as f:
+            with open(config.waiting_line, 'r') as f:
                 line = f.read()
-            with open(file_path, 'w') as f:
+            with open(config.waiting_line, 'w') as f:
                 f.write(line + str(gif_counter) + ',')
         gif_counter += 1
     except Timeout:

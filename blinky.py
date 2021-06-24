@@ -9,6 +9,7 @@ import neopixel
 from PIL import Image, ImageSequence
 from filelock import FileLock
 import layout
+import config
 
 
 def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
@@ -23,12 +24,12 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
 
     def update_line(lock):
         with lock:
-            with open("/home/pi/ws2812b/config/waiting_line", 'r') as f:
+            with open(config.waiting_line, 'r') as f:
                 line = f.read()
                 if len(line) > 1:
                     print(f'waiting line: {line}')
                 waiting_line = ast.literal_eval('[' + line[:-1] + ']')
-            with open("/home/pi/ws2812b/config/waiting_line", 'w') as f:
+            with open(config.waiting_line, 'w') as f:
                 f.write('')
         return waiting_line
 
@@ -139,7 +140,7 @@ def init(x_boxes, y_boxes, brightness=1, n_led=False):
     #Setup Display Matrix
     #matrix[y][x] = led_id
     matrix = layout.full_layout(x_boxes, y_boxes, vert=True)
-    with open("/home/pi/ws2812b/config/waiting_line", 'w') as f:
+    with open(config.waiting_line, 'w') as f:
         f.write('')
     if n_led:
         return display_resolution, strip, matrix, led_count
@@ -155,13 +156,13 @@ def main(x_boxes=5, y_boxes=3):
 
     #Setup Media Wait list
 
-    os.makedirs("/home/pi/ws2812b/graveyard", exist_ok=True)
-    os.chown("/home/pi/ws2812b/graveyard", uid=1000, gid=1000)
-    os.makedirs("/home/pi/ws2812b/gifs", exist_ok=True)
-    os.chown("/home/pi/ws2812b/gifs", uid=1000, gid=1000)
+    os.makedirs(f"{config.work_dir}/graveyard", exist_ok=True)
+    # os.chown(f"{config.work_dir}/graveyard", uid=1000, gid=1000)
+    os.makedirs(f"{config.work_dir}/gifs", exist_ok=True)
+    # os.chown(f"{config.work_dir}/gifs", uid=1000, gid=1000)
 
-    lock = FileLock("/home/pi/ws2812b/config/waiting_line.lock", timeout=5)
-    mylist = [f[:-4] for f in glob.glob("/home/pi/ws2812b/backgrounds/*.gif")]
+    lock = FileLock(config.waiting_line_lock, timeout=5)
+    mylist = [f[:-4] for f in glob.glob(f"{config.work_dir}/backgrounds/*.gif")]
 
     while True:
         display_gif(strip, matrix, random.choice(mylist), display_resolution, lock)
