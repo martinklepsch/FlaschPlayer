@@ -27,6 +27,7 @@ Install [direnv](https://direnv.net/)
 
 ```
 echo 'export BOT_TOKEN=xyz-your-token-xyz' >> .envrc
+echo 'export WAIT_DIR=/some/directory' >> .envrc
 ```
 
 

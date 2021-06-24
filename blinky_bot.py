@@ -24,8 +24,8 @@ from ffmpy import FFmpeg
 from filelock import Timeout, FileLock
 import os
 import glob
-file_path = "/home/pi/ws2812b/config/waiting_line"
 lock_path = "/home/pi/ws2812b/config/waiting_line.lock"
+file_path = os.environ['WAIT_DIR']
 
 lock = FileLock(lock_path, timeout=10)
 #Init of waiting line as empty file
