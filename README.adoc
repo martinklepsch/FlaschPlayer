@@ -2,12 +2,14 @@
 
 == One Time Setup
 
+[source,sh]
 ....
 python3 -m venv env
 ....
 
 To activate the env:
 
+[source,sh]
 ....
 #fish
 . env/bin/activate.fish
@@ -17,6 +19,7 @@ source env/bin/activate
 
 To install required packages:
 
+[source,sh]
 ....
 pip install -r requirements.txt
 ....
@@ -27,6 +30,7 @@ pip install -r requirements.txt
 
 Install, save and commit dependencies:
 
+[source,sh]
 ....
 pip install some-package
 pip freeze > requirements.txt
@@ -38,6 +42,7 @@ git commit -m 'update dependencies'
 
 Install https://direnv.net/[direnv]
 
+[source,sh]
 ....
 echo 'export BOT_TOKEN=xyz-your-token-xyz' >> .envrc
 echo 'export WAIT_DIR=/some/directory' >> .envrc
@@ -47,6 +52,7 @@ echo 'export WAIT_DIR=/some/directory' >> .envrc
 
 Requires a bot token created via @BotFather.
 
+[source,sh]
 ....
 export BOT_TOKEN=some-token
 ....
