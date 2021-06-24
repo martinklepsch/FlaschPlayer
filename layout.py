@@ -11,7 +11,7 @@ def full_layout(x_boxes, y_boxes, vert=False, horz=False):
     for x in range(1, x_boxes):
         layout = np.concatenate((layout, matrix+x*20), axis=1)
     for y in range(1, y_boxes):
-        layout = np.concatenate((layout, layout+x_boxes*20), axis=0)
+        layout = np.concatenate((layout, layout+x_boxes*y*20), axis=0)
 
     if vert:
         layout = np.fliplr(layout)
