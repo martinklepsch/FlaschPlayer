@@ -90,7 +90,7 @@ def gif_handler(update, context):
     logger.info(f'Starting Gif Handler')
     mp4 = context.bot.getFile(update.message.document.file_id)
     mp4.download('/home/pi/ws2812b/media.mp4')
-    put_gifs('/home/pi/ws2812b/media.gif')
+    put_gifs('/home/pi/ws2812b/media.mp4')
 
 
 def image_handler(update, context):

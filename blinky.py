@@ -65,8 +65,8 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
         while waiting_line:
             for media in waiting_line:
                 bright = set_brightness()
-                journal.write(f'Fore: {media}.gif')
                 foreground_gif = Image.open(f'/home/pi/ws2812b/gifs/{media}.gif')
+                journal.write(f'Front: {media}.gif')
                 if 'duration' in foreground_gif.info:
                     #Adding the durations of every frame until at least 5 sec runtime
                     runtime = 0
@@ -79,8 +79,8 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
                     #photos in gif container get shown 5 seconds
                     for _ in range(50):
                         draw_frame(foreground_gif, display_resolution, bright)
-                os.rename('/home/pi/ws2812b/gifs/{media}.gif',
-                          '/home/pi/ws2812b/graveyard/{time.time()}.gif')
+                os.rename(f'/home/pi/ws2812b/gifs/{media}.gif',
+                          f'/home/pi/ws2812b/graveyard/{time.time()}.gif')
             waiting_line = update_line(lock)
 
 
