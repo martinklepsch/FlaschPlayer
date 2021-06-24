@@ -13,8 +13,15 @@ To activate the env:
 source env/bin/activate
 ```
 
-Save and commit dependencies
+To install required packages:
 
+```
+pip install -r requirements.txt
+```
+
+**Some packages for neopixel/raspberry pi stuff are missing**
+
+Save and commit dependencies:
 ```
 pip freeze > requirements.txt
 git add requirements.txt
