@@ -7,7 +7,6 @@ import ast
 import board
 import neopixel
 from PIL import Image, ImageSequence
-from systemd import journal
 from filelock import FileLock
 import layout
 
@@ -27,7 +26,7 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
             with open("/home/pi/ws2812b/config/waiting_line", 'r') as f:
                 line = f.read()
                 if len(line) > 1:
-                    journal.write(f'waiting line: {line}')
+                    print(f'waiting line: {line}')
                 waiting_line = ast.literal_eval('[' + line[:-1] + ']')
             with open("/home/pi/ws2812b/config/waiting_line", 'w') as f:
                 f.write('')
@@ -51,7 +50,7 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
 
 
     background_gif = Image.open(path_to_gif + '.gif')
-    journal.write(f'Back: {path_to_gif}.gif')
+    print(f'Back: {path_to_gif}.gif')
     if (background_gif.size[0] < display_resolution[0] or
             background_gif.size[1] < display_resolution[1]):
         #fallback gif should be placed if the background is wrongly composed
@@ -66,7 +65,7 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
             for media in waiting_line:
                 bright = set_brightness()
                 foreground_gif = Image.open(f'/home/pi/ws2812b/gifs/{media}.gif')
-                journal.write(f'Front: {media}.gif')
+                print(f'Front: {media}.gif')
                 if 'duration' in foreground_gif.info:
                     #Adding the durations of every frame until at least 5 sec runtime
                     runtime = 0
@@ -92,7 +91,7 @@ def set_brightness():
         brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
     except ValueError:
         brightness = 1.0
-        journal.write(f'ERROR: Reset Brightness: {brightness}')
+        print(f'ERROR: Reset Brightness: {brightness}')
     return brightness
 
 
@@ -168,8 +167,8 @@ def main(x_boxes=5, y_boxes=3):
         display_gif(strip, matrix, random.choice(mylist), display_resolution, lock)
 
 if __name__ == '__main__':
-    journal.write('############################################')
-    journal.write('Starting Blinky')
+    print('############################################')
+    print('Starting Blinky')
     import argparse
     PARSER = argparse.ArgumentParser()
     PARSER.add_argument("-d", "--debug", action="store_true", default=False,
