@@ -1,6 +1,7 @@
 """Blinky: Main contributer to FlaschPlayer"""
 import time
 import os
+import sys
 import random
 import glob
 import ast
@@ -164,8 +165,11 @@ def main(x_boxes=5, y_boxes=3):
     lock = FileLock(config.waiting_line_lock, timeout=5)
     mylist = [f[:-4] for f in glob.glob(f"{config.work_dir}/backgrounds/*.gif")]
 
-    while True:
+    while mylist:
         display_gif(strip, matrix, random.choice(mylist), display_resolution, lock)
+
+    if not mylist:
+        sys.exit(f"No gif in {config.work_dir}/backgrounds")
 
 if __name__ == '__main__':
     print('############################################')
