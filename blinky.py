@@ -56,7 +56,7 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
     if (background_gif.size[0] < display_resolution[0] or
             background_gif.size[1] < display_resolution[1]):
         #fallback gif should be placed if the background is wrongly composed
-        background_gif = Image.open('/home/pi/ws2812b/config/fallback.gif')
+        background_gif = Image.open(f'{config.work_dir}/config/fallback.gif')
 
     #pylint: disable=too-many-nested-blocks
     for frame in ImageSequence.Iterator(background_gif):
@@ -66,7 +66,7 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
         while waiting_line:
             for media in waiting_line:
                 bright = set_brightness()
-                foreground_gif = Image.open(f'/home/pi/ws2812b/gifs/{media}.gif')
+                foreground_gif = Image.open(f'{config.work_dir}/gifs/{media}.gif')
                 print(f'Front: {media}.gif')
                 if 'duration' in foreground_gif.info:
                     #Adding the durations of every frame until at least 5 sec runtime
@@ -80,15 +80,15 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
                     #photos in gif container get shown 5 seconds
                     for _ in range(50):
                         draw_frame(foreground_gif, display_resolution, bright)
-                os.rename(f'/home/pi/ws2812b/gifs/{media}.gif',
-                          f'/home/pi/ws2812b/graveyard/{time.time()}.gif')
+                os.rename(f'{config.work_dir}/gifs/{media}.gif',
+                          f'{config.work_dir}/graveyard/{time.time()}.gif')
             waiting_line = update_line(lock)
 
 
 def set_brightness():
     """Lists all files in config folder and extracts the option from
     the file name."""
-    options = [f for f in files("/home/pi/ws2812b/config/")]
+    options = [f for f in files("{config.work_dir}/config/")]
     try:
         brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
     except ValueError:
