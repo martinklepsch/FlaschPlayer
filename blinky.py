@@ -94,6 +94,9 @@ def set_brightness():
     except ValueError:
         brightness = 1.0
         print(f'ERROR: Reset Brightness: {brightness}')
+    except:
+        brightness = 1.0
+        print("Something broken, should fix some time")
     return brightness
 
 
