@@ -88,7 +88,7 @@ def display_gif(strip, matrix, path_to_gif, display_resolution, lock):
 def set_brightness():
     """Lists all files in config folder and extracts the option from
     the file name."""
-    options = [f for f in files("{config.work_dir}/config/")]
+    options = [f for f in files(f"{config.work_dir}/config/")]
     try:
         brightness = float([i for i in options if 'BRIGHTNESS' in i][0][11:])
     except ValueError:
